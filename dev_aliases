@@ -1,0 +1,158 @@
+# ============================================================================
+# UJET Docker Development Environment - Bash Aliases
+# Updated for Docker-based development (ujet-dev-portal)
+# ============================================================================
+
+# UJET Project Path - Update this to your actual path
+UJET_PROJECT_PATH="$HOME/ujet"
+UJET_DEV_PORTAL="$UJET_PROJECT_PATH/ujet-dev-portal"
+
+# ============================================================================
+# UJET Management Scripts (ujet.sh)
+# ============================================================================
+UJET_SCRIPT="$UJET_DEV_PORTAL/scripts/ujet.sh"
+alias uhelp="$UJET_SCRIPT help"
+alias usetup="$UJET_SCRIPT setup"
+alias uclean="$UJET_SCRIPT clean"
+alias ustart="$UJET_SCRIPT start"
+alias ustop="$UJET_SCRIPT stop"
+alias urestart="$UJET_SCRIPT restart"
+alias urecreate="$UJET_SCRIPT recreate"
+alias urebuild="$UJET_SCRIPT rebuild"
+alias ustatus="$UJET_SCRIPT status"
+alias uattach="$UJET_SCRIPT attach"
+alias ulogs="$UJET_SCRIPT logs"
+alias ushell="$UJET_SCRIPT shell"
+alias udb-backup="$UJET_SCRIPT db backup"
+alias udb-restore="$UJET_SCRIPT db restore"
+
+# ============================================================================
+# Docker Compose Shortcuts
+# ============================================================================
+# Shortcut for docker compose commands in ujet-dev-portal directory
+ucompose() {
+    cd "$UJET_DEV_PORTAL" || return 1
+    docker compose "$@"
+}
+
+# Common docker compose aliases
+alias dc='ucompose'
+alias dcu='ucompose up -d'
+alias dcd='ucompose down'
+alias dcr='ucompose restart'
+alias dce='ucompose exec'
+alias dcl='ucompose logs -f'
+alias ups='ucompose ps -a'
+
+# ============================================================================
+# Container Logs (Docker-based)
+# ============================================================================
+# View logs from Docker containers
+alias railog='ucompose logs rails-api'
+alias railogt='ucompose logs -f rails-api'
+alias railogg='ucompose logs rails-api | grep'
+
+alias sidlog='ucompose logs sidekiq'
+alias sidlogt='ucompose logs -f sidekiq'
+alias sidlogg='ucompose logs sidekiq | grep'
+
+alias crmlog='ucompose logs crm-server'
+alias crmlogt='ucompose logs -f crm-server'
+alias crmlogg='ucompose logs crm-server | grep'
+
+alias medlog='ucompose logs media-service'
+alias medlogt='ucompose logs -f media-service'
+
+alias vasslog='ucompose logs vass'
+alias vasslogt='ucompose logs -f vass'
+
+# Combined logs for debugging
+alias dblog='ucompose logs -f rails-api sidekiq crm-server'
+alias dblogg='ucompose logs rails-api sidekiq crm-server | grep'
+
+# ============================================================================
+# Rails & Database Commands
+# ============================================================================
+# Rails console
+alias railsc="ucompose exec -e DISABLE_SPRING=1 rails-api bundle exec rails console"
+alias urailsc="ucompose exec -e DISABLE_SPRING=1 rails-api bundle exec rails console"
+
+# Rails commands
+alias be='bundle exec'
+alias bers='ucompose exec rails-api bundle exec rspec'
+alias migrate='ucompose exec rails-api bundle exec rake db:migrate'
+alias migrate_all='ucompose exec rails-api bundle exec rake db:migrate_all'
+
+# Database access
+alias mysql-console='ucompose exec mysql mysql -u ujet -pujetmysql'
+alias redis-cli='ucompose exec redis redis-cli'
+
+# ============================================================================
+# Directory Navigation
+# ============================================================================
+alias sweb="cd $UJET_PROJECT_PATH/ujet-server/web"
+alias ser="cd $UJET_PROJECT_PATH/ujet-server"
+alias clnt="cd $UJET_PROJECT_PATH/ujet-client"
+alias udev="cd $UJET_DEV_PORTAL"
+alias uproj="cd $UJET_PROJECT_PATH"
+
+# ============================================================================
+# Git Shortcuts
+# ============================================================================
+alias gfc="git fetch --prune && git checkout"
+alias stagh="git stash push --staged"
+alias hard='git restore . && git clean -fd && git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)'
+alias dbr="git reset --hard origin && git checkout main && git reset --hard origin && git pull && git branch | grep -v -E '^\*? *main$' | xargs git branch -D"
+
+# Pull all repositories
+alias pull="$UJET_DEV_PORTAL/scripts/pull_all.sh"
+
+# ============================================================================
+# Company Management
+# ============================================================================
+COMPANY_SCRIPT="$UJET_DEV_PORTAL/scripts/company.sh"
+alias company-create="$COMPANY_SCRIPT create"
+alias company-seed="$COMPANY_SCRIPT seed"
+alias company-phone="$COMPANY_SCRIPT phone"
+alias company-destroy="$COMPANY_SCRIPT destroy"
+
+# Quick phone number purchase (update subdomain as needed)
+alias newphonewhodis="$COMPANY_SCRIPT phone -s sfcomuhib"
+
+# ============================================================================
+# Service-Specific Commands
+# ============================================================================
+# Start specific service groups
+run() {
+    case "$1" in
+        "be"|"backend")
+            echo "Starting backend services (Rails API + Sidekiq + MySQL + Redis + RabbitMQ)..."
+            ucompose up -d rails-api sidekiq mysql redis rabbitmq
+            echo "✅ Backend services started!"
+            ;;
+        "fe"|"frontend")
+            echo "Starting frontend services (Frontend + Envoy)..."
+            ucompose up -d frontend envoy
+            echo "✅ Frontend services started!"
+            ;;
+        "all")
+            echo "Starting all services..."
+            ucompose up -d
+            echo "✅ All services started!"
+            ;;
+        *)
+            echo "Usage: run [be|backend|fe|frontend|all]"
+            ;;
+    esac
+}
+
+# ============================================================================
+# Development Helpers
+# ============================================================================
+# Show listening ports
+alias ports='netstat -tulpn | grep LISTEN'
+
+# Quick access to common containers
+alias rails-shell='ucompose exec rails-api bash'
+alias frontend-shell='ucompose exec frontend sh'
+alias mysql-shell='ucompose exec mysql bash'
