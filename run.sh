@@ -1,55 +1,58 @@
 #!/bin/bash
-. ~/.nvm/nvm.sh
 
-ports=(3000 5000 7433 3435 5045 6060 4050 5050 5080 5081 7777 8888)
-for port in "${ports[@]}"; do
-    pid=$(lsof -t -i :$port)
-    if [ -n "$pid" ]; then
-        echo "Port $port is in use by PID $pid. Killing process..."
-        kill -9 $pid
-        echo "Process with PID $pid killed."
-    else
-        echo "Port $port is not in use."
-    fi
-done
+# Dockerized version - start UJET services
+# This script works with the new Docker Compose development environment
 
-redis-cli flushall
+# Determine the project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DEV_PORTAL_ROOT="$PROJECT_ROOT/ujet-dev-portal"
 
+cd "$DEV_PORTAL_ROOT"
+
+echo "Flushing Redis..."
+docker compose exec redis redis-cli flushall 2>/dev/null || echo "Redis not running, will flush on start"
 
 case "$1" in
     "be")
-        echo "Running backend"
-        cd ~/ujet-server
-        ./ujet-remote.sh run rails
+        echo "Starting backend services (Rails API + Sidekiq)..."
+        docker compose up -d rails-api sidekiq mysql redis rabbitmq
+
+        echo ""
+        echo "✅ Backend services started!"
+        echo "  - Rails API: http://localhost:5000"
+        echo "  - MySQL: localhost:7111"
+        echo "  - Redis: localhost:7121"
+        echo "  - RabbitMQ: localhost:7131"
         ;;
+
     "fe")
-        echo "Running frontend"
-        cd ~/ujet-server
-        ./ujet-remote.sh run fe
+        echo "Starting frontend services..."
+        docker compose up -d frontend envoy
+
+        echo ""
+        echo "✅ Frontend services started!"
+        echo "  - Frontend: https://company-subdomain.localtest.me:5443"
         ;;
-    *)
-        cd ~/ujet-node-theme-service
-        nvm use
-        npm run start > /var/log/ujet/theme.log&
-        cd ~/ujet-server
-        ./ujet-remote.sh run
+
+    "all"|*)
+        echo "Starting all UJET services..."
+        docker compose up -d
+
+        echo ""
+        echo "✅ All services started!"
+        echo ""
+        echo "🌐 Access URLs:"
+        echo "  • Dev Portal:    http://localhost:7200"
+        echo "  • Frontend App:  https://company-subdomain.localtest.me:5443"
+        echo "  • Rails API:     http://localhost:5000"
+        echo ""
+        echo "📊 Monitor services:"
+        echo "  • Service Status: http://localhost:7200/services/status"
+        echo "  • Logs (SigNoz):  http://localhost:8080"
         ;;
 esac
 
-# Update import-map.json
-IMPORT_MAP_FILE="~/ujet-client/microfrontends/root-config/dist/import-map.json"
-if [ -f "$IMPORT_MAP_FILE" ]; then
-    echo "Updating import-map.json..."
-    sed -i 's|"/UJET-root-config.js"|"https://zdcomuhibalhasan.ujetremote.dev/UJET-root-config.js"|g' "$IMPORT_MAP_FILE"
-    echo "Updated @UJET/root-config URL in import-map.json"
-fi
-
-# if [ -z $1 ]; then
-    
-# else
-    # cd ~/ujet-node-theme-service
-    # nvm use
-    # npm run start > /var/log/ujet/theme.log&
-    # cd ~/ujet-server
-    # ./ujet-remote.sh run
-# fi
+echo ""
+echo "Use 'docker compose logs -f <service>' to view logs"
+echo "Use 'docker compose ps' to check service status"
