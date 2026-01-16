@@ -25,6 +25,12 @@ alias ulogs="$UJET_SCRIPT logs"
 alias ushell="$UJET_SCRIPT shell"
 alias udb-backup="$UJET_SCRIPT db backup"
 alias udb-restore="$UJET_SCRIPT db restore"
+alias usignoz-start="$UJET_SCRIPT signoz start"
+alias usignoz-stop="$UJET_SCRIPT signoz stop"
+alias uvm-install="$UJET_SCRIPT vm install"
+alias uvm-start="$UJET_SCRIPT vm start"
+alias uvm-stop="$UJET_SCRIPT vm stop"
+alias uvm-status="$UJET_SCRIPT vm status"
 
 # ============================================================================
 # Docker Compose Shortcuts
@@ -67,8 +73,11 @@ alias vasslog='ucompose logs vass'
 alias vasslogt='ucompose logs -f vass'
 
 # Combined logs for debugging
-alias dblog='ucompose logs -f rails-api sidekiq crm-server'
-alias dblogg='ucompose logs rails-api sidekiq crm-server | grep'
+# Note: Docker Compose logs already include timestamps and service names
+alias dblog='ucompose logs -f rails-api sidekiq crm-server | grep --line-buffered --color=always -E "DEV-LOG"'
+alias dblogt='ucompose logs -f rails-api sidekiq crm-server'  # All logs (no filter)
+alias dblogg='ucompose logs rails-api sidekiq crm-server | grep --color=always -E'
+alias dblogtg='ucompose logs -f rails-api sidekiq crm-server | grep --line-buffered --color=always -E'
 
 # ============================================================================
 # Rails & Database Commands
@@ -105,7 +114,10 @@ alias hard='git restore . && git clean -fd && git reset --hard origin/$(git rev-
 alias dbr="git reset --hard origin && git checkout main && git reset --hard origin && git pull && git branch | grep -v -E '^\*? *main$' | xargs git branch -D"
 
 # Pull all repositories
-alias pull="$UJET_DEV_PORTAL/scripts/pull_all.sh"
+alias pull="$UJET_PROJECT_PATH/dev_scripts/pull_all.sh"
+alias clnpull="$UJET_PROJECT_PATH/dev_scripts/clean_pull.sh"
+alias coutp="$UJET_PROJECT_PATH/dev_scripts/checkout-pull-install.sh"
+alias spp="$UJET_PROJECT_PATH/dev_scripts/git-stash-checkout-pull-pop.sh"
 
 # ============================================================================
 # Company Management
@@ -145,6 +157,12 @@ run() {
             ;;
     esac
 }
+
+# ============================================================================
+# Database Management
+# ============================================================================
+# Database dump management
+alias dump="ucompose exec rails-api bundle exec rake db:clean_dump"
 
 # ============================================================================
 # Development Helpers
